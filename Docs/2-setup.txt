@@ -1,0 +1,180 @@
+#######################################################################################################################
+################### Setup time zome
+#######################################################################################################################
+
+$ ln -sf /usr/share/zoneinfo/Africa/Tunis /etc/localtime
+
+### Set the hardware clock from the systemclock:
+$ hwclock --systohc
+
+#######################################################################################################################
+################### Setup Language to US and set locale
+#######################################################################################################################
+
+$ sed -i '/#ar_TN.UTF-8 UTF-8/s/^#//' /etc/locale.gen
+$ sed -i '/#en_US.UTF-8 UTF-8/s/^#//' /etc/locale.gen
+$ sed -i '/#fr_FR.UTF-8 UTF-8/s/^#//' /etc/locale.gen
+or
+$ nano /etc/locale.gen 
+=> uncomment the language or languages you prefer
+
+$ locale-gen
+
+$ echo 'LANG=en_US.UTF-8' >> /etc/locale.conf
+$ echo 'LC_ADDRESS=en_US.UTF-8' >> /etc/loacle.conf
+$ echo 'LC_IDENTIFICATION=en_US.UTF-8' >> /etc/loacle.conf
+$ echo 'LC_MEASUREMENT=en_US.UTF-8' >> /etc/loacle.conf
+$ echo 'LC_MONETARY=en_US.UTF-8' >> /etc/loacle.conf
+$ echo 'LC_NAME=en_US.UTF-8' >> /etc/loacle.conf
+$ echo 'LC_NUMERIC=en_US.UTF-8' >> /etc/loacle.conf
+$ echo 'LC_PAPER=en_US.UTF-8' >> /etc/loacle.conf
+$ echo 'LC_TELEPHONE=en_US.UTF-8' >> /etc/loacle.conf
+$ echo 'LC_TIME=en_US.UTF-8' >> /etc/loacle.conf
+
+$ echo 'KEYMAP=fr' >> /etc/vconsole.conf
+$ echo 'FONT=ter-v18b' >> /etc/vconsole.conf
+
+#######################################################################################################################
+################### Adding Hostname & Edition of /etc/hosts
+#######################################################################################################################
+
+$ echo 'ArchLinux' >> /etc/hostname
+or
+$ hostnamectl set-hostname ArchLinux   
+
+$ echo '127.0.0.1	    localhost' >> /etc/hosts
+$ echo '::1	       		localhost' >> /etc/hosts
+$ echo '127.0.1.1	    ArchLinux.localdomain	ArchLinux' >> /etc/hosts
+
+#######################################################################################################################
+################### Configure pacman
+#######################################################################################################################
+
+$ nano /etc/pacman.conf
+=> Enable multilib repos
+=> Enable parallel downloads
+
+$ pacman -Syu
+
+#######################################################################################################################
+################### Installing useful packages
+#######################################################################################################################
+
+$ pacman -S --needed networkmanager network-manager-applet dialog ifplugd iw iwd wpa_supplicant wireless_tools dhclient netctl nfs-utils inetutils dnsutils openssh bridge-utils dnsmasq openbsd-netcat iptables-nft ipset nss-mdns acpi acpid acpi_call ntfs-3g e2fsprogs usbutils terminus-font ntp xdg-user-dirs xdg-utils sof-firmware rsync reflector tlp bash-completion man-db man-pages texinfo
+
+#######################################################################################################################
+################### Enabling Essential Services
+#######################################################################################################################
+
+$ systemctl disable dhcpcd.service
+$ systemctl stop dhcpcd.service
+$ systemctl enable NetworkManager.service
+$ systemctl enable wpa_supplicant.service
+$ systemctl enable ntpd.service
+$ systemctl enable sshd.service
+$ systemctl enable reflector.timer
+$ systemctl enable tlp.service
+$ systemctl enable acpid.service
+$ systemctl enable fstrim.timer # If system is running on an SSD
+
+#######################################################################################################################
+################### Edit mkinitcpio.conf and recreate initramfs image
+#######################################################################################################################
+
+$ nano /etc/mkinitcpio.conf => Include "btrfs" in modules: MODULES=(btrfs)
+or
+$ sed -i 's/MODULES=()/MODULES=(btrfs)/' /etc/mkinitcpio.conf
+
+
+$ mkinitcpio -p linux
+or
+$ mkinitcpio -P
+
+#######################################################################################################################
+################### Root password
+#######################################################################################################################
+
+$ passwd
+
+#######################################################################################################################
+################### Creating Grub Boot Menu
+#######################################################################################################################
+
+### On BIOS based system:
+$ pacman -S --needed grub os-prober mtools dosfstools
+
+$ grub-install --target=i386-pc --recheck /dev/sda # sda is your disk name, not the partition
+
+$ grub-mkconfig -o /boot/grub/grub.cfg
+
+
+### On UEFI based system:
+$ pacman -S --needed grub efibootmgr os-prober mtools dosfstools
+
+$ grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB # Change the directory to /boot if you mounted the EFI partition at /boot
+
+$ grub-mkconfig -o /boot/grub/grub.cfg
+
+#######################################################################################################################
+################### Rebooting
+#######################################################################################################################
+
+$ exit
+
+$ umount -R /mnt    or    umount -a
+
+$ reboot
+
+=> Log back in with root.
+
+#######################################################################################################################
+################### Adding user
+#######################################################################################################################
+
+$ useradd -m -g users -G audio,video,network,wheel,storage,rfkill -s /bin/bash anisbsalah
+
+$ passwd anisbsalah
+
+$ EDITOR=nano visudo 
+=> uncomment "%wheel ALL=(ALL:ALL) ALL"
+
+# Then log back in with user account.
+
+#######################################################################################################################
+################### Install display server
+#######################################################################################################################
+
+$ sudo pacman -S --needed xorg xorg-apps xorg-drivers xorg-server xorg-kill xorg-xinit
+
+#######################################################################################################################
+################### Install graphics driver
+#######################################################################################################################
+
+### The linux kernel can handle many graphical cards so try first without any extra installation
+### To find out what hardware you have in your computer:
+$ lspci | grep -e VGA -e 3D
+
+#######################################################################################################################
+################### Install video and input drivers
+#######################################################################################################################
+
+$ sudo pacman -S --nedded linux-headers sof-firmware mesa lib32-mesa xf86-input-elographics xf86-input-evdev xf86-input-libinput xf86-input-synaptics
+
+#######################################################################################################################
+################### Install wireless driver (Broadcom BCM4312) ### necessary for my hp laptop
+#######################################################################################################################
+
+$ sudo pacman -S dkms
+$ sudo pacman -S --needed broadcom-wl-dkms
+or
+$ sudo pacman -S --needed broadcom-wl
+
+#######################################################################################################################
+################### Install your desktop
+#######################################################################################################################
+
+$ sudo pacman -S plasma-meta konsole kate dolphin firefox ssdm
+$ sudo systemctl enable ssdm.service
+$ reboot
+
+#######################################################################################################################

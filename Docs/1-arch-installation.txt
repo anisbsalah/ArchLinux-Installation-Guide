@@ -1,0 +1,219 @@
+***********************************************************************************************************************
+*****************************                                                              ****************************
+*****************************                    ArchLinux Installation                    ****************************
+*****************************                                                              ****************************
+***********************************************************************************************************************
+
+
+#######################################################################################################################
+################### Verify the boot mode [ if you see this message “No such file or directory“ --> you booted in bios ]
+#######################################################################################################################
+
+$ ls /sys/firmware/efi/efivars
+or
+$ efivar -l
+
+#######################################################################################################################
+################### Set the keyboard layout
+#######################################################################################################################
+
+### List available layouts:
+$ find /usr/share/kbd/keymaps/ -type f | more
+or
+$ localectl list-keymaps
+
+### Set your keymap:
+$ loadkeys fr-latin9
+or
+$ loadkeys fr
+
+#######################################################################################################################
+################### Set the console font
+#######################################################################################################################
+
+### List of console fonts:
+$ ls /usr/share/kbd/consolefonts/
+
+### Set console font:
+$ setfont ter-v16b
+or
+$ setfont ter-v18b
+or
+$ setfont default8x16
+
+#######################################################################################################################
+################### Connect to Wifi
+#######################################################################################################################
+
+$ ip
+
+$ iwctl
+
+$ device list
+
+$ station wlan0 scan
+
+$ station wlan0 get-networks
+
+$ station wlan0 connect "name_of_wifi"
+
+### To exit iwd prompt:
+$ exit or press Ctrl+d
+
+$ ip a
+
+#######################################################################################################################
+################### Check the internet connection
+#######################################################################################################################
+
+$ ping -c 4 archlinux.org
+
+#######################################################################################################################
+################### Update the system clock
+#######################################################################################################################
+
+$ timedatectl set-ntp true
+
+#######################################################################################################################
+################### Discover that our harddisk is named /dev/sda
+#######################################################################################################################
+
+$ fdisk -l
+or
+$ lsblk
+
+#######################################################################################################################
+################### Delete all the partitions
+#######################################################################################################################
+
+$ wipefs -a /dev/sda
+### If not, use:
+$ sgdisk -Z /dev/sda
+
+#######################################################################################################################
+################### Start partitioning tool
+#######################################################################################################################
+
+### Text-based
+$ fdisk
+
+### Graphical (Recommended for beginners)
+$ cfdisk
+
+### UEFI only text-based
+$ gdisk
+
+### UEFI only Graphical (Recommended for beginners)
+$ cgdisk
+
+# Create partitions. (choose any partitioning scheme)
+# Then we choose Write. Type yes and confirm with Enter, then select quit.
+# Type lsblk to see the changes to the harddisk.
+
+#######################################################################################################################
+################### Format the partitions depending on the partitioning scheme yous chose
+#######################################################################################################################
+
+$ mkfs.fat -F32 /dev/efi_partition
+
+$ mkfs.ext4 /dev/boot_partition
+
+$ mkfs.btrfs /dev/root_partition
+
+#######################################################################################################################
+################### Create subvolumes to better organize our data and to exclude them from btrfs snapshots
+#######################################################################################################################
+
+$ mount /dev/root_partition /mnt
+
+$ btrfs subvolume create /mnt/@
+
+$ btrfs subvolume create /mnt/@home
+
+$ btrfs subvolume create /mnt/@root
+
+$ btrfs subvolume create /mnt/@srv
+
+$ btrfs subvolume create /mnt/@log
+
+$ btrfs subvolume create /mnt/@cache
+
+$ btrfs subvolume create /mnt/@tmp
+
+$ btrfs subvolume create /mnt/@snapshots
+
+$ btrfs subvolume create /mnt/@swap
+
+#######################################################################################################################
+################### Let us unmount /mnt and remount all subvolumes
+#######################################################################################################################
+
+$ umount /mnt
+
+$ mount -o defaults,noatime,compress=zstd,subvol=@ /dev/root_partition /mnt
+
+$ mkdir -p /mnt/{home,root,srv,var/log,var/cache,tmp,.snapshots,swap}
+
+$ mount -o defaults,noatime,compress=zstd,subvol=@home /dev/root_partition /mnt/home
+
+$ mount -o defaults,noatime,compress=zstd,subvol=@root /dev/root_partition /mnt/root
+
+$ mount -o defaults,noatime,compress=zstd,subvol=@srv /dev/root_partition /mnt/srv
+
+$ mount -o defaults,noatime,compress=zstd,subvol=@log /dev/root_partition /mnt/var/log
+
+$ mount -o defaults,noatime,compress=zstd,subvol=@cache /dev/root_partition /mnt/var/cache
+
+$ mount -o defaults,noatime,compress=zstd,subvol=@tmp /dev/root_partition /mnt/tmp
+
+$ mount -o defaults,noatime,compress=zstd,subvol=@snapshots /dev/root_partition /mnt/.snapshots
+
+$ mount -o defaults,noatime,subvol=@swap /dev/root_partition /mnt/swap
+
+#######################################################################################################################
+################### Mount the EFI partition if it was created to /boot/efi folder
+#######################################################################################################################
+
+$ mkdir -p /mnt/boot/efi
+$ mount /dev/efi_partition /mnt/boot/efi
+
+# or shortly:
+$ mount --mkdir /dev/efi_partition /mnt/boot/efi
+
+#######################################################################################################################
+################### Mount the boot partition if it was created to /boot folder
+#######################################################################################################################
+
+$ mkdir -p /mnt/boot
+$ mount /dev/boot_partition /mnt/boot
+
+# or shortly:
+$ mount --mkdir /dev/boot_partition /mnt/boot
+
+#######################################################################################################################
+################### Install the base and base-devel packages on our mounted partition
+#######################################################################################################################
+
+$ pacstrap -i /mnt base base-devel linux linux-firmware linux-headers intel-ucode btrfs-progs sudo nano bash-comlpetion terminus-font
+
+#######################################################################################################################
+################### Use the  genfstab script to generate a fstab file so linux will know what partitions we have
+#######################################################################################################################
+
+$ genfstab -U /mnt >>/mnt/etc/fstab
+
+#######################################################################################################################
+################### CHROOT
+#######################################################################################################################
+
+$ arch-chroot /mnt
+
+#######################################################################################################################
+################### Create swap file
+#######################################################################################################################
+
+$ btrfs filesystem mkswapfile --size 3g /swap/swapfile
+$ echo '/swap/swapfile    swap    swap    defaults,pri=100    0   0' | tee -a /etc/fstab
+$ swapon -p 100 /swap/swapfile # -p  or --priority is to set the swap priority, by default it is -2
+
+#######################################################################################################################

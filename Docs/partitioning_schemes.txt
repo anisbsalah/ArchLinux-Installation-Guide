@@ -1,0 +1,82 @@
+******************************************************************************************************
+                                            BIOS/(MBR/DOS)                                            
+******************************************************************************************************
+
+
+***********
+* Option 1:
+***********
+
+
+|      Partition      |   Size  |  Partition type  | Code (fdisk) | Flags        | 
+|---------------------|---------|------------------|--------------|--------------|
+| /boot  (ext4)       | 1024 MB | Linux filesystem | 83           | Bootable (a) | 
+| /      (ext4/btrfs) | -       | Linux filesystem | 83           | -            |
+
+
+
+***********
+* Option 2: [worked on arch but failed on linuxmint]
+***********
+
+
+|      Partition      |   Size  |  Partition type  | Code (fdisk) | Flags        | 
+|---------------------|---------|------------------|--------------|--------------|
+| /      (ext4/btrfs) | -       | Linux filesystem | 83           | Bootable (a) |
+
+
+
+******************************************************************************************************
+                                              BIOS/(GPT)                                              
+******************************************************************************************************
+
+
+***********
+* Option 1:
+***********
+
+|      Partition      |   Size  |  Partition type  | Code (fdisk/gdisk) |
+|---------------------|---------|------------------|--------------------|
+| Unformatted         | 8 MB 	| BIOS boot 	   | 4 / ef02           |
+| /      (ext4/btrfs) | -       | Linux filesystem | 20 / 8300          |
+
+
+
+
+***********
+* Option 2: (Fedora default scheme)
+***********
+
+|      Partition      |   Size  |  Partition type  | Code (fdisk/cfdisk) |
+|---------------------|---------|------------------|---------------------|
+| Unformatted         | 1024 KB | BIOS boot 	   | 4 / ef02            |
+| /boot      (ext4)   | 1024 MB | Linux filesystem | 20 / 8300           |
+| /      (ext4/btrfs) | -       | Linux filesystem | 20 / 8300           |
+
+
+
+******************************************************************************************************
+                                              UEFI/(GPT)                                                  
+******************************************************************************************************
+
+
+***********
+* Option 1:
+***********
+
+|      Partition      |    Size  |  Partition type  | Code (fdisk/gdisk) |
+|---------------------|----------|------------------|--------------------|
+| /boot/efi           | >=300 MB | EFI system       | 1 / ef00           |
+| /      (ext4/btrfs) | -        | Linux filesystem | 20 / 8300          |
+
+
+
+***********
+* Option 2: (Fedora default scheme)
+***********
+
+|      Partition      |   Size  |  Partition type  | Code (fdisk/gdisk) |
+|---------------------|---------|------------------|--------------------|
+| /boot        (ext4) | 1024 MB | Linux filesystem | 20 / 8300          |
+| /boot/efi           | 600 MB  | EFI system       | 1 / ef00           |
+| /      (ext4/btrfs) | -       | Linux filesystem | 20 / 8300          |
